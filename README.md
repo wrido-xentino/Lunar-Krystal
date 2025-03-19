@@ -1,6 +1,6 @@
 # File mình share thuộc dạng ngon ở thời điểm hiện tại. Treo mượt không lỗi nên hãy giữ nguyên credit giúp mình nhé. 🌸
 
-## Lưu ý: Nếu báo lỗi cực dài thì hãy vào modules sau đó vào commands xoá global.js đi nhé
+## Lưu ý: Bản hosting sẽ có hạn chế về pack canvas, vì vậy bạn sẽ phải chấp nhận mất một số lệnh
 ### Việc làm này sẽ mất video của bot
 
 ### Liên hệ mình qua:
