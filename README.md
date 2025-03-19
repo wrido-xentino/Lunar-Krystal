@@ -1,6 +1,7 @@
 # File mình share thuộc dạng ngon ở thời điểm hiện tại. Treo mượt không lỗi nên hãy giữ nguyên credit giúp mình nhé. 🌸
 
-## Nhớ hãy fork (remix) đúng nguồn (@khoi0603k) tránh lỗi ✔
+## Lưu ý: Nếu báo lỗi cực dài thì hãy vào modules sau đó vào commands xoá global.js đi nhé
+### Việc làm này sẽ mất video của bot
 
 ### Liên hệ mình qua:
 - Facebook🪐 : Lương Trường Khôi
@@ -17,6 +18,9 @@
     /:::=======:::\`\`\
     `"""""""""""""`  '-'
 ```
+### update 19/03/2025
+- Bỏ log video khỏi console
+- Fix chạy trên Hosting & Termux
 ### update 02/03/2025
 - Tối ưu pack
 - Fix nhiều lắm bạn trải nghiệm đi nhé
