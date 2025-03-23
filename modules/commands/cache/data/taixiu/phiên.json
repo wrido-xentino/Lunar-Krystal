@@ -376,5 +376,12 @@
         "dice1": 6,
         "dice2": 6,
         "dice3": 4
+    },
+    {
+        "phien": 56,
+        "result": "xỉu",
+        "dice1": 3,
+        "dice2": 5,
+        "dice3": 2
     }
 ]
