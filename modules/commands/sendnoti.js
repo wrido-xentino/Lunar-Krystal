@@ -1,132 +1,110 @@
-const fs = require('fs').promises; // Sử dụng fs.promises để làm việc với các phương thức không đồng bộ
-const request = require('request-promise-native'); // Sử dụng request-promise-native để hỗ trợ Promise
-
+/*
+» Có lỗi LH FB: fb.com/levy.nam.2k5
+*/
 module.exports.config = {
     name: "sendnoti",
-    version: "1.0.0",
-    hasPermssion: 3,
-    credits: "TruongMini", //mode by vtuan
-    description: "Thông báo cho các nhóm",
+    version: "1.1.1",
+    hasPermssion: 2,
+    credits: "N1002",
+    description: "Gửi tin nhắn đến tấy cả nhóm và reply để phản hồi",
     commandCategory: "Admin",
-    usages: "noti [msg]",
-    cooldowns: 5,
-}
-
-let atmDir = [];
-
-const getAtm = async (atm, body) => {
-    let msg = { body: body, attachment: [] };
-    
-    for (const eachAtm of atm) {
-        try {
-            const response = await request.get(eachAtm.url);
-            const pathName = response.uri.pathname;
-            const ext = pathName.substring(pathName.lastIndexOf(".") + 1);
-            const path = `${__dirname}/cache/${eachAtm.filename}.${ext}`;
-            
-            await new Promise((resolve, reject) => {
-                response
-                    .pipe(fs.createWriteStream(path))
-                    .on("close", async () => {
-                        msg.attachment.push(await fs.createReadStream(path));
-                        atmDir.push(path);
-                        resolve();
+    usages: "text",
+    cooldowns: 2
+};
+request = require("request");
+fse = require("fs-extra");
+imageDownload = require("image-downloader");
+moment = require("moment-timezone");
+fullTime = () => moment.tz("Asia/Ho_Chi_Minh").format("HH:mm:ss - DD/MM/YYYY");
+module.exports.run = async({ api, event, Users, permission }) => {
+    const { threadID: tid, messageID: mid, senderID: sid, attachments: atms, messageReply: mR, type, body, args } = event; 
+    const allTid = global.data.allThreadID || [];
+    const atm = await type == "message_reply" ? mR.attachments : atms.length != 0 ? atms : "nofile";
+    const content = !args[1] ? "chỉ có tệp" : body.slice(body.indexOf(args[1]));
+    if (!args[1] && atm == "nofile") return api.sendMessage(`Bạn chưa nhập nội dung`, tid, mid);
+    var msg = `» Thông Báo Từ Admin «\n──────────────────\n👤 Admin: ${(await Users.getData(sid)).name}\n🌐 Link fb: https://www.facebook.com/profile.php?id=${event.senderID}\n🏘️ Nơi gửi: ${event.isGroup == true ? 'Nhóm ' + global.data.threadInfo.get(event.threadID).threadName: 'từ cuộc trò chuyện riêng với bot'}\n⏰ time: ${fullTime()}\n💬 Nội dung: ${content}\n──────────────────\n✏ Reply tin nhắn này nếu muốn ( phản hồi ) về admin`
+    const uwu = atm == "nofile" ? msg : {
+        body: msg,
+        attachment: await DownLoad(atm)
+    };
+var c1 = 0, c2 = 0;
+    for (var idT of allTid) {
+      var promise = new Promise (async(r1, r2) => {
+ await api.sendMessage(uwu, idT, async(e, i) => {
+   if (e) r2(++c2); else r1(++c1)
+      return global.client.handleReply.push({
+            name: this.config.name,
+            messageID: i.messageID,
+            author: sid,
+            type: "userReply"
+        })
+      });
+    })
+  }
+promise.then(async(r) => api.sendMessage(`Gửi thông báo thành công đến ${r} nhóm`, tid, mid)).catch(async(err) => api.sendMessage(`Không thể gửi thông báo đến ${err} nhóm`, tid, mid))
+};
+module.exports.handleReply = async({ api, event, handleReply: h, Users, Threads }) => {
+    const { threadID: tid, messageID: mid, senderID: sid, attachments: atms, body, type } = event;
+    const { ADMINBOT } = global.config;
+    switch (h.type) {
+        case "userReply": {
+            const atm = atms.length != 0 ? atms : "nofile";
+            var msg = `👤 Phản hồi từ người dùng: ${(await Users.getData(sid)).name}\n🌐 Link fb: https://www.facebook.com/profile.php?id=${event.senderID}\n🎀 Nhóm: ${(await Threads.getData(tid)).threadInfo.threadName}\n⏱ Time: ${fullTime()}\n\n📝 Nội dung: ${atm == "nofile" ? body : "Chỉ có tệp tới bạn"}\n\n» Reply tin nhắn này nếu muốn phản hồi đến người dùng.`
+            const uwu = atm == "nofile" ? msg : {
+                body: msg,
+                attachment: await DownLoad(atm)
+            };
+          var c1 = 0, c2 = 0;
+            for (var idA of ADMINBOT) {
+              var promise = new Promise (async(r1, r2) => {
+                await api.sendMessage(uwu, idA, async(e, i) => {
+     if (e) r2(++c2); else r1(++c1)
+                    return global.client.handleReply.push({
+                        name: this.config.name,
+                        messageID: i.messageID,
+                        author: h.author, idThread: tid, idMessage: mid, idUser: sid,
+                        type: "adminReply"
                     })
-                    .on("error", reject);
-            });
-        } catch (error) {
-            console.error("Error downloading attachment:", error);
-        }
-    }
-    
-    return msg;
-}
-
-module.exports.handleReply = async function ({ api, event, handleReply, Users, Threads }) {
-    const { threadID, messageID, senderID, body } = event;
-    let name = await Users.getNameUser(senderID);
-    switch (handleReply.type) {
-        case "noti": {
-            let text = `» Phản Hồi Từ User «\n▱▱▱▱▱▱▱▱▱▱▱▱▱\n➜ Name: ${name}\nNhóm: ${(await Threads.getInfo(threadID)).threadName || "Unknow"}\n➜ Nội dung : ${body || "không nội dung"}\n▱▱▱▱▱▱▱▱▱▱▱▱▱\nReply để gửi lại thành viên`;
-            if (event.attachments.length > 0) {
-                text = await getAtm(event.attachments, text);
-            }
-            api.sendMessage(text, handleReply.threadID, async (err, info) => {
-                if (err) console.error("Error sending message:", err);
-                await Promise.all(atmDir.map(async (each) => {
-                    try {
-                        await fs.unlink(each);
-                    } catch (error) {
-                        console.error("Error deleting file:", error);
-                    }
-                }));
-                atmDir = [];
-                global.client.handleReply.push({
-                    name: this.config.name,
-                    type: "reply",
-                    messageID: info.messageID,
-                    messID: messageID,
-                    threadID
                 });
             });
+       }; 
+          promise.then(async(r1) => api.sendMessage(`📨 Phản hồi thành công đến Admin ${(await Users.getData(h.author)).name} và ${+r1-1} Admin khác`, tid, mid)).catch(async(err) => api.sendMessage(`Không thể phản hồi tới ${err} Admin`, tid, mid))
             break;
-        }
-        case "reply": {
-            let text = `» Phản Hồi Từ Admin «\n▱▱▱▱▱▱▱▱▱▱▱▱▱\n\n➜ Name: ${name}\n➜ Nội dung : ${body}\n▱▱▱▱▱▱▱▱▱▱▱▱▱\nreply tin nhắn này để báo về admin`;
-            if (event.attachments.length > 0) {
-                text = await getAtm(event.attachments, text);
-            }
-            api.sendMessage(text, handleReply.threadID, async (err, info) => {
-                if (err) console.error("Error sending message:", err);
-                await Promise.all(atmDir.map(async (each) => {
-                    try {
-                        await fs.unlink(each);
-                    } catch (error) {
-                        console.error("Error deleting file:", error);
-                    }
-                }));
-                atmDir = [];
-                global.client.handleReply.push({
-                    name: this.config.name,
-                    type: "noti",
-                    messageID: info.messageID,
-                    threadID
-                });
-            }, handleReply.messID);
-            break;
-        }
-    }
-}
+        };
+    case "adminReply": {
+        const atm = atms.length != 0 ? atms : "nofile";
+        var msg = `Phản hồi từ Admin ${(await Users.getData(sid)).name}\n⏱ time: ${fullTime()}\n\n📝 Nội dung: ${atm == "nofile" ? body : "Chủ có tệp tới bạn"}\n\n» Reply tin nhắn này nếu muốn phản hồi đến Admin`
+        const uwu = atm == "nofile" ? msg : {
+            body: msg,
+            attachment: await DownLoad(atm)
+        };
+        await api.sendMessage(uwu, h.idThread, async(e, i) => {
+            if (e) return api.sendMessage(`Error`, tid, mid);
+            else api.sendMessage(`📨 Phản hồi thành công đến người dùng ${(await Users.getData(h.idUser)).name} tại nhóm ${(await Threads.getData(h.idThread)).threadInfo.threadName}`, tid, mid)
+            return global.client.handleReply.push({
+                name: this.config.name,
+                messageID: i.messageID,
+                author: sid,
+                type: "userReply"
+            })
+        }, h.idMessage);
+        break;
+    };
+  }
+};
 
-module.exports.run = async function ({ api, event, args, Users }) {
-    const { threadID, messageID, senderID, messageReply } = event;
-    if (!args[0]) return api.sendMessage("Nội dung ??", threadID);
-    let allThread = global.data.allThreadID || [];
-    let can = 0, canNot = 0;
-    let text = `📢 Thông báo từ Admin: ${await Users.getNameUser(senderID)}\n▱▱▱▱▱▱▱▱▱▱▱▱▱\n\n✉️ Nội dung: ${args.join(" ")}\n▱▱▱▱▱▱▱▱▱▱▱▱▱\nReply để phản hồi lại Admin.`;
-    
-    if (event.type == "message_reply") {
-        text = await getAtm(messageReply.attachments, text);
+const DownLoad = async(atm) => {
+    var arr = [];
+    for (var i = 0; i < atm.length; i++) {
+        const nameUrl = request.get(atm[i].url).uri.pathname
+        const namefile = atm[i].type != "audio" ? nameUrl : nameUrl.replace(/\.mp4/g, ".m4a");
+        const path = __dirname + "/cache/" + namefile.slice(namefile.lastIndexOf("/") + 1);
+        await imageDownload.image({
+            url: atm[i].url,
+            dest: path
+        });
+        arr.push(fse.createReadStream(path));
+        fse.unlinkSync(path);
     }
-
-    for (const each of allThread) {
-        try {
-            await api.sendMessage(text, each);
-            can++;
-        } catch (err) {
-            canNot++;
-            console.error("Error sending message:", err);
-        }
-    }
-    
-    await Promise.all(atmDir.map(async (each) => {
-        try {
-            await fs.unlink(each);
-        } catch (error) {
-            console.error("Error deleting file:", error);
-        }
-    }));
-    
-    atmDir = [];
-    api.sendMessage(`Đã gửi thành công đến ${can} nhóm!\nKhông thể gửi đến ${canNot} nhóm!`, threadID);
-}
+    return arr;
+};

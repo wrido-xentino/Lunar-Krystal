@@ -9,7 +9,7 @@ const figlet = require('figlet');
 const { execSync } = require('child_process');
 const logger = require("./utils/log.js");
 // const login = require("fca-horizon-remastered"); 
-const login = require("./includes/ws3");
+const login = require("@dongdev/fca-unofficial");
 const axios = require("axios");
 const listPackage = JSON.parse(readFileSync('./package.json')).dependencies;
 const listbuiltinModules = require("module").builtinModules;
@@ -141,7 +141,7 @@ catch { return logger.loader(global.getText("mirai", "notFoundPathAppstate"), "e
 
 
 function onBot({ models: botModel }) {
-    console.log(chalk.yellow(figlet.textSync('START BOT', { horizontalLayout: 'full' })));
+    console.log(chalk.yellow(figlet.textSync('STARTING', { horizontalLayout: 'full' })));
     const loginData = {};
     loginData['appState'] = appState;
     login(loginData, async(loginError, loginApiData) => {
@@ -302,63 +302,78 @@ function onBot({ models: botModel }) {
 
     });
 }
-//////////////////////////////////////////////
-//========= Connecting to Database =========//
-//////////////////////////////////////////////
+// (async () => {
+//     try {
+//         try {
+//             global.client.loggedMongoose = true;
+//             const { Model, DataTypes, Sequelize } = require("sequelize");
+//             const sequelize2 = new Sequelize({
+//                 dialect: "sqlite",
+//                 host: __dirname + '/LunarKrystal/datasqlite/antists.sqlite',
+//                 logging: false
+//             });
+//             class dataModel extends Model { }
+//             dataModel.init({
+//                 threadID: {
+//                     type: DataTypes.STRING,
+//                     primaryKey: true
+//                 },
+//                 data: {
+//                     type: DataTypes.JSON,
+//                     defaultValue: {}
+//                 }
+//             }, {
+//                 sequelize: sequelize2,
+//                 modelName: "antists"
+//             });
+        //////////////////////////////////////////////
+        //========= Connecting to Database =========//
+        //////////////////////////////////////////////
 
-(async () => {
-    try {
-        try {
-            global.client.loggedMongoose = true;
-            const { Model, DataTypes, Sequelize } = require("sequelize");
-            const sequelize2 = new Sequelize({
-                dialect: "sqlite",
-                host: __dirname + '/LunarKrystal/datasqlite/antists.sqlite',
-                logging: false
-            });
-            class dataModel extends Model { }
-            dataModel.init({
-                threadID: {
-                    type: DataTypes.STRING,
-                    primaryKey: true
-                },
-                data: {
-                    type: DataTypes.JSON,
-                    defaultValue: {}
-                }
-            }, {
-                sequelize: sequelize2,
-                modelName: "antists"
-            });
+        (async() => {
+            try {
+                await sequelize.authenticate();
+                const authentication = {};
+                authentication.Sequelize = Sequelize;
+                authentication.sequelize = sequelize;
+                const models = require('./includes/database/model')(authentication);
+                logger(global.getText('mirai', 'successConnectDatabase'), '');
 
-            // connect to database
-            dataModel.findOneAndUpdate = async function (filter, update) {
-                const doc = await this.findOne({
-          where: filter  
-        });
-                if (!doc)
-                    return null;
-                Object.keys(update).forEach(key => doc[key] = update[key]);
-                await doc.save();
-                return doc;
-            }
-            global.modelAntiSt = dataModel;
-            await sequelize2.sync({ force: false });
-        }
-        catch (error) {
-            global.client.loggedMongoose = false;
-            logger.loader('Không thể kết nối dữ liệu ANTI SETTING', '[ CONNECT ]');
-            console.log(error);
-        }
+                const botData = {};
+                botData.models = models
+                onBot(botData);
+            } catch (error) { logger(global.getText('mirai', 'successConnectDatabase', JSON.stringify(error)), '[ DATABASE ] '); }
+        })()
+        process.on('unhandledRejection', (err, p) => {})
+            .on('uncaughtException', err => { console.log(err); });
+//             // connect to database
+//             dataModel.findOneAndUpdate = async function (filter, update) {
+//                 const doc = await this.findOne({
+//           where: filter  
+//         });
+//                 if (!doc)
+//                     return null;
+//                 Object.keys(update).forEach(key => doc[key] = update[key]);
+//                 await doc.save();
+//                 return doc;
+//             }
+//             global.modelAntiSt = dataModel;
+//             await sequelize2.sync({ force: false });
+//         }
+//         catch (error) {
+//             global.client.loggedMongoose = false;
+//             logger.loader('Không thể kết nối dữ liệu ANTI SETTING', '[ CONNECT ]');
+//             console.log(error);
+//         }
 
-        await sequelize.authenticate();
-        const authentication = {};
-        authentication.Sequelize = Sequelize;
-        authentication.sequelize = sequelize;
-        const models = require('./includes/database/model')(authentication);
-        const botData = {};
-        botData.models = models
-        onBot(botData);
-    } catch (error) { logger(global.getText('mirai', 'successConnectDatabase', JSON.stringify(error)), '[ DATABASE ]'); }
-})();
-process.on('unhandledRejection', (err, p) => {});
+//         await sequelize.authenticate();
+//         const authentication = {};
+//         authentication.Sequelize = Sequelize;
+//         authentication.sequelize = sequelize;
+//         const models = require('./includes/database/model')(authentication);
+//         const botData = {};
+//         botData.models = models
+//         onBot(botData);
+//     } catch (error) { logger(global.getText('mirai', 'successConnectDatabase', JSON.stringify(error)), '[ DATABASE ]'); }
+// })();
+// process.on('unhandledRejection', (err, p) => {});

@@ -82,7 +82,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
       const checker = stringSimilarity.findBestMatch(commandName, allCommandName);
       var gio = moment.tz("Asia/Ho_Chi_Minh").format("D/MM/YYYY || HH:mm:ss");
       if (checker.bestMatch.rating >= 0.5) command = global.client.commands.get(checker.bestMatch.target);
-      else return api.sendMessage({body:`==[ ${global.config.BOTNAME} ]==\n❎ Lệnh không tồn tại !\n✅ Lệnh gần giống là: ${checker.bestMatch.target}\n─────────────────\n🎶 Thời gian hoạt động: ${hours}:${minutes}:${seconds}\n⏰ Time: ${gio}`, attachment: global.krystal.splice(0, 1)}, threadID, messageID);
+      else return api.sendMessage({body:`==[ ${gio} ]==\n🌌 ${global.config.BOTNAME} chào bạn!\n✅ Lệnh bận cần là: ${checker.bestMatch.target}?\n─────────────────\n🎶 Uptime: ${hours}:${minutes}:${seconds}`, attachment: global.krystal.splice(0, 1)}, threadID, messageID);
     }
 
     if (commandBanned.get(threadID) || commandBanned.get(senderID)) {
