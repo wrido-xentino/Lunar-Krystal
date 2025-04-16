@@ -5,7 +5,8 @@ const axios = require("axios");
 const semver = require("semver");
 const logger = require("./utils/log");
 const path = require('path');
-
+const chalk = require('chalk');
+const figlet = require('figlet');
 ///////////////////////////////////////////////////////////
 //========= Create website for dashboard/uptime =========//
 ///////////////////////////////////////////////////////////
@@ -20,7 +21,7 @@ app.get('/', (request, response) => {
 });
 // Start the server
 app.listen(PORT, () => {
-    console.log(`[ SECURITY ] -> Máy chủ khởi động tại port: ${PORT}`);
+    console.log(chalk.red(`[ SECURITY ] -> Máy chủ khởi động tại port: ${PORT}`));
 });
 
 
@@ -48,5 +49,6 @@ function startBot(message) {
     });
 };
 
-axios.get("https://raw.githubusercontent.com/tandung1/Bot12/main/package.json").then((res) => {})
+console.log(chalk.yellow(figlet.textSync('KRYSTAL', { horizontalLayout: 'full' })));
+console.log(chalk.green("Lương Trường Khôi chúc bạn sử dụng file vui vẻ!"))
 startBot()
