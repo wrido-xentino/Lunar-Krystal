@@ -10,6 +10,7 @@ const fs = require('fs-extra');
 const chalk = require('chalk');
 const figlet = require('figlet');
 const moment = require('moment-timezone');
+const os = require('os');
 if (!fs.existsSync('./utils/data')) {
   fs.mkdirSync('./utils/data', { recursive: true });
 }
