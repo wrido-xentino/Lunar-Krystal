@@ -12,9 +12,10 @@ module.exports = function ({ api, models }) {
   const moment = require("moment-timezone");
   const axios = require("axios");
   var day = moment.tz("Asia/Ho_Chi_Minh").day();
+
   (async function () {
     try {
-      logger(global.getText("listen", "startLoadEnvironment"), "DATA");
+      //logger(global.getText("listen", "startLoadEnvironment"), "DATA");
       let threads = await Threads.getAll(),
         users = await Users.getAll(["userID", "name", "data"]),
         currencies = await Currencies.getAll(["userID"]);

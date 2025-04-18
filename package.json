@@ -16,7 +16,6 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@distube/ytdl-core": "github:ToddyTheNoobDud/ytdl-core-stuff",
-    "@dongdev/fca-unofficial": "github:DongDev-VN/fca-unofficial",
     "@google/generative-ai": "^0.17.0",
     "@miraipr0ject/assets": "^1.0.9",
     "acorn": "^8.10.0",
@@ -81,7 +80,6 @@
     "uuid": "^10.0.0",
     "websocket-stream": "^5.5.2",
     "wikijs": "^6.4.1",
-    "ws3-fca": "github:NethWs3Dev/ws3-fca",
     "youtube-search-api": "^1.2.1",
     "ytdl-core": "^4.11.5"
   },

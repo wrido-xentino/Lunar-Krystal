@@ -18,6 +18,8 @@
     /:::=======:::\`\`\
     `"""""""""""""`  '-'
 ```
+### update 18/04/2025
+- Big update
 ### update 19/03/2025
 - Bỏ log video khỏi console
 - Fix chạy trên Hosting & Termux
