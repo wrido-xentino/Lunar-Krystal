@@ -11,6 +11,7 @@ module.exports.config = {
   description: "Hiển thị thông tin hệ thống của bot",
   commandCategory: "Admin",
   usages: "upt",
+  usePrefix: false,
   cooldowns: 5
 };
 
@@ -100,6 +101,6 @@ module.exports.run = async ({ api, event, Users, Threads }) => {
 📶 Ping: ${Date.now() - event.timestamp}ms
 👤 Yêu cầu bởi: ${name}
   `.trim();
-
-  api.sendMessage({body: replyMsg, attachment: global.krystal.splice(0, 1)}, event.threadID, event.messageID);
+  let uid = event.senderID;
+  api.shareContact(replyMsg, uid, event.threadID, event.messageID);
 };

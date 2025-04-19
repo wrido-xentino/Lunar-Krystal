@@ -17,7 +17,7 @@
     "BOTNAME": "Krystal [BETA]",
     "AMDIN_NAME": "Điền tên bạn vào đây",
     "FACEBOOK_ADMIN": "https://www.facebook.com/100018277053087",
-    "PREFIX": "/",
+    "PREFIX": ">",
     "LOGIN": {
         "EMAIL": "",
         "PASSWORD": "",
