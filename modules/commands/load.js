@@ -1,197 +1,134 @@
+const { readdirSync } = require('fs-extra');
+const fs = require('fs-extra');
+const { join } = require('path');
+const path = require('path');
+
 module.exports.config = {
     name: "load",
-    version: "1.0.0",
-    hasPermssion: 3,
-    usePrefix: false,
-    credits: "Mirai Team",
-    description: "Quản lý/Kiểm soát toàn bộ module của bot",
+    version: "2.0.0",
+    hasPermssion: 2,
+    credits: "Niio-team (Vtuan)",
+    description: "Load module",
     commandCategory: "Admin",
-    usages: "[mdl/un/All/unAll/info/count] [tên module]",
-    cooldowns: 1,
-    dependencies: {
-        "fs-extra": "",
-        "child_process": "",
-        "path": ""
-    }
+    usages: "[all] | + (có thể có Event) +  [tên module] | All",
+    cooldowns: 0,
+    usePrefix: false
 };
 
-const loadCommand = function ({ moduleList, threadID, messageID }) {
+function readModules(t) {
+    const fileReadModules = path.resolve('./modules/commands/');
+    const folders = fs.readdirSync(fileReadModules);
+    for (let folder of folders) {
+        const fullPath = path.join(fileReadModules, folder);
+        if (fs.lstatSync(fullPath).isDirectory()) {
+            const files = fs.readdirSync(fullPath).filter(file => file.endsWith('.js'));
+            for (let file of files) {
+                const x = file.slice(0, -3);
+                if (x == t) return path.join(fullPath, file);
+            }
+        }
+    }
+}
+module.exports.run = async function ({ event, args, api, models }) {
+    const threadID = event.threadID;
+    const messageID = event.messageID;
 
-    const { execSync } = require('child_process');
-    const { writeFileSync, unlinkSync, readFileSync } = global.nodemodule['fs-extra'];
-    const { join } = global.nodemodule['path'];
-    const { configPath, mainPath, api } = global.client;
-    const logger = require(mainPath + '/utils/log');
-
-    var errorList = [];
-    delete require['resolve'][require['resolve'](configPath)];
-    var configValue = require(configPath);
-    writeFileSync(configPath + '.temp', JSON.stringify(configValue, null, 2), 'utf8');
-    for (const nameModule of moduleList) {
+    function reloadModule(type, name) {
+        const dirPath = type === 'commands' ? __dirname : path.join(__dirname, '..', 'events');
         try {
-            const dirModule = __dirname + '/' + nameModule + '.js';
-            delete require['cache'][require['resolve'](dirModule)];
-            const command = require(dirModule);
-            global.client.commands.delete(nameModule);
-            if (!command.config || !command.run || !command.config.commandCategory) 
-                throw new Error('Module không đúng định dạng!');
-            global.client['eventRegistered'] = global.client['eventRegistered']['filter'](info => info != command.config.name);
-            if (command.config.dependencies && typeof command.config.dependencies == 'object') {
-                const listPackage = JSON.parse(readFileSync('./package.json')).dependencies,
-                    listbuiltinModules = require('module')['builtinModules'];
-                for (const packageName in command.config.dependencies) {
-                    var tryLoadCount = 0,
-                        loadSuccess = ![],
-                        error;
-                    const moduleDir = join(global.client.mainPath, 'nodemodules', 'node_modules', packageName);
-                    try {
-                        if (listPackage.hasOwnProperty(packageName) || listbuiltinModules.includes(packageName)) global.nodemodule[packageName] = require(packageName);
-                        else global.nodemodule[packageName] = require(moduleDir);
-                    } catch {
-                        logger.loader('Không tìm thấy package ' + packageName + ' hỗ trợ cho lệnh ' + command.config.name+ 'tiến hành cài đặt...', 'warn');
-                        const insPack = {};
-                        insPack.stdio = 'inherit';
-                        insPack.env = process.env ;
-                        insPack.shell = !![];
-                        insPack.cwd = join(global.client.mainPath,'nodemodules')
-                        execSync('npm --package-lock false --save install ' + packageName + (command.config.dependencies[packageName] == '*' || command.config.dependencies[packageName] == '' ? '' : '@' + command.config.dependencies[packageName]), insPack);
-                        for (tryLoadCount = 1; tryLoadCount <= 3; tryLoadCount++) {
-                            require['cache'] = {};
-                            try {
-                                if (listPackage.hasOwnProperty(packageName) || listbuiltinModules.includes(packageName)) global.nodemodule[packageName] = require(packageName);
-                                else global.nodemodule[packageName] = require(moduleDir);
-                                loadSuccess = !![];
-                                break;
-                            } catch (erorr) {
-                                error = erorr;
-                            }
-                            if (loadSuccess || !error) break;
-                        }
-                        if (!loadSuccess || error) throw 'Không thể tải package ' + packageName + (' cho lệnh ') + command.config.name +', lỗi: ' + error + ' ' + error['stack'];
-                    }
+            let filePath;
+
+            if (type === 'commands') {
+                filePath = readModules(name);
+                delete require.cache[require.resolve(filePath)];
+                const mdlModule = require(filePath);
+                if (!mdlModule.config || !mdlModule.run || !mdlModule.config.commandCategory) {
+                    return api.sendMessage(`❎ Module không đúng định dạng: ${name}`, threadID, messageID);
                 }
-                logger.loader('Đã tải thành công toàn bộ package cho lệnh ' + command.config.name);
-            }
-            if (command.config.envConfig && typeof command.config.envConfig == 'Object') try {
-                for (const [key, value] of Object['entries'](command.config.envConfig)) {
-                    if (typeof global.configModule[command.config.name] == undefined) 
-                        global.configModule[command.config.name] = {};
-                    if (typeof configValue[command.config.name] == undefined) 
-                        configValue[command.config.name] = {};
-                    if (typeof configValue[command.config.name][key] !== undefined) 
-                        global.configModule[command.config.name][key] = configValue[command.config.name][key];
-                    else global.configModule[command.config.name][key] = value || '';
-                    if (typeof configValue[command.config.name][key] == undefined) 
-                        configValue[command.config.name][key] = value || '';
+                if (mdlModule.onLoad) mdlModule.onLoad(api, models);
+                global.client[type].set(mdlModule.config.name, mdlModule);
+            } else if (type === 'events') {
+                filePath = path.join(dirPath, `${name}.js`);
+                delete require.cache[require.resolve(filePath)];
+                const mdlModule = require(filePath);
+                if (!mdlModule.config || !mdlModule.config.name || !mdlModule.config.eventType || !mdlModule.run) {
+                    return api.sendMessage(`❎ Module không đúng định dạng: ${name}`, threadID, messageID);
                 }
-                logger.loader('Loaded config' + ' ' + command.config.name);
-            } catch (error) {
-                throw new Error('» Không thể tải config module, lỗi: ' + JSON.stringify(error));
+                if (mdlModule.onLoad) mdlModule.onLoad(api, models);
+                global.client[type].set(mdlModule.config.name, mdlModule);
             }
-            if (command['onLoad']) try {
-                const onLoads = {};
-                onLoads['configValue'] = configValue;
-                command['onLoad'](onLoads);
-            } catch (error) {
-                throw new Error(' ➜  Không thể onLoad module, lỗi: ' + JSON.stringify(error), 'error');
-            }
-            if (command.handleEvent) global.client.eventRegistered.push(command.config.name);
-            (global.config.commandDisabled.includes(nameModule + '.js') || configValue.commandDisabled.includes(nameModule + '.js')) 
-            && (configValue.commandDisabled.splice(configValue.commandDisabled.indexOf(nameModule + '.js'), 1),
-            global.config.commandDisabled.splice(global.config.commandDisabled.indexOf(nameModule + '.js'), 1))
-            global.client.commands.set(command.config.name, command)
-            logger.loader('Loaded command ' + command.config.name + '!');
+
+            api.sendMessage(`✅ Đã tải lại thành công ${type.slice(0, -1)} ${name}!`, threadID, messageID);
         } catch (error) {
-            errorList.push('- ' + nameModule + ' reason:' + error + ' at ' + error['stack']);
-        };
-    }
-
-if (errorList.length != 0) {
-    console.log(`Những lệnh đã xảy ra sự cố khi đang load: ${errorList.join(' ')}`, threadID, messageID);
-    api.setMessageReaction("😠", messageID);  // Add a reacting emoji to the user's message
-  } else { 
-    api.setMessageReaction("👍", messageID);  // Add a reacting emoji to the user's message
-  writeFileSync(configPath, JSON.stringify(configValue, null, 4), 'utf8')
-  unlinkSync(configPath + '.temp');
-  return;
-  }
-
-}
-
-
-const unloadModule = function ({ moduleList, threadID, messageID }) {
-    const { writeFileSync, unlinkSync } = global.nodemodule["fs-extra"];
-    const { configPath, mainPath, api } = global.client;
-    const logger = require(mainPath + "/utils/log").loader;
-
-    delete require.cache[require.resolve(configPath)];
-    var configValue = require(configPath);
-    writeFileSync(configPath + ".temp", JSON.stringify(configValue, null, 4), 'utf8');
-
-    for (const nameModule of moduleList) {
-        global.client.commands.delete(nameModule);
-        global.client.eventRegistered = global.client.eventRegistered.filter(item => item !== nameModule);
-        configValue["commandDisabled"].push(`${nameModule}.js`);
-        global.config["commandDisabled"].push(`${nameModule}.js`);
-        logger(`Unloaded command ${nameModule}!`);
-    }
-
-    writeFileSync(configPath, JSON.stringify(configValue, null, 4), 'utf8');
-    unlinkSync(configPath + ".temp");
-
-    return api.sendMessage(` ➜  Đã hủy thành công ${moduleList.length} lệnh`, threadID, messageID);
-}
-
-
-module.exports.run = function ({ event, args, api }) {
-
-    const { readdirSync } = global.nodemodule["fs-extra"];
-    const { threadID, messageID } = event;
-    var moduleList = args.splice(1, args.length);
-    switch (args[0]) {
-      case "count": {
-      let commands = client.commands.values();
-      let infoCommand = "";
-      api.sendMessage(" ➜ Hiện tại đang có " + client.commands.size + " lệnh có thể sử dụng!"+ infoCommand, event.threadID, event.messageID);
-      break;
-    }
-        case "mdl": {
-            if (moduleList.length == 0) return api.sendMessage(" ➜  Tên module không được để trống!", threadID, messageID);
-            else return loadCommand({ moduleList, threadID, messageID });
-        }
-        case "un": {
-            if (moduleList.length == 0) return api.sendMessage(" ➜  Tên module không được để trống!", threadID, messageID);
-            else return unloadModule({ moduleList, threadID,   messageID });
-        }
-        case "All": {
-            moduleList = readdirSync(__dirname).filter((file) => file.endsWith(".js") && !file.includes('example'));
-            moduleList = moduleList.map(item => item.replace(/\.js/g, ""));
-            return loadCommand({ moduleList, threadID, messageID });
-        }
-        case "unAll": {
-            moduleList = readdirSync(__dirname).filter((file) => file.endsWith(".js") && !file.includes('example') && !file.includes("command"));
-            moduleList = moduleList.map(item => item.replace(/\.js/g, ""));
-            return unloadModule({ moduleList, threadID, messageID });
-        }
-        case "info": {
-            const command = global.client.commands.get(moduleList.join("") || "");
-
-            if (!command) return api.sendMessage("➜ Module bạn nhập không tồn tại!", threadID, messageID);
-
-            const { name, version, hasPermssion, credits, cooldowns, dependencies } = command.config;
-
-            return api.sendMessage(
-                "=== " + name.toUpperCase() + " ===\n" +
-                "- Được code bởi: " + credits + "\n" +
-                "- Phiên bản: " + version + "\n" +
-                "- Yêu cầu quyền hạn: " + ((hasPermssion == 0) ? "Người dùng" : (hasPermssion == 1) ? "Quản trị viên" : "Người vận hành bot" ) + "\n" +
-                "- Thời gian chờ: " + cooldowns + " giây(s)\n" +
-                `- Các package yêu cầu: ${(Object.keys(dependencies || {})).join(", ") || "Không có"}`,
-                threadID, messageID
-            );
-        }
-        default: {
-            return global.utils.throwError(this.config.name, threadID, messageID);
+            console.error(`❎ Lỗi khi tải lại ${type.slice(0, -1)} ${name}: ${error.message}`);
+            api.sendMessage(`❎ Lỗi khi tải lại ${type.slice(0, -1)} ${name}`, threadID, messageID);
         }
     }
-}
+
+
+    function unloadModule(type, name) {
+        if (global.client[type].has(name)) {
+            const dirPath = type === 'commands' ? __dirname : path.join(__dirname, '..', 'events');
+            const filePath = path.join(dirPath, `${name}.js`);
+            delete require.cache[require.resolve(filePath)];
+            global.client[type].delete(name);
+            api.sendMessage(`✅ Đã hủy tải module ${name} thành công.`, threadID, messageID);
+        } else {
+            api.sendMessage(`❎ Module ${name} không tồn tại trong danh sách đã tải.`, threadID, messageID);
+        }
+    }
+
+    if (args[0] === "All") {
+        for (const command of global.client.commands.keys()) {
+            global.client.commands.delete(command);
+        }
+        for (const event of global.client.events.keys()) {
+            global.client.events.delete(event);
+        }
+        const commandFiles = readdirSync(__dirname).filter(file => file.endsWith('.js') && !file.includes('example'));
+        for (const file of commandFiles) {
+            const filePath = join(__dirname, file);
+            delete require.cache[require.resolve(filePath)];
+        }
+        
+        const eventFiles = readdirSync(path.join(__dirname, '..', '..', 'events')).filter(file => file.endsWith('.js') && !file.includes('example'));
+
+        for (const file of eventFiles) {
+            const filePath = join(__dirname, '..', '..', 'events', file);
+            delete require.cache[require.resolve(filePath)];
+        }
+
+        global.loadMdl('commands');
+        global.loadMdl('events');
+        api.sendMessage('✅ Đã tải thành công ' + global.client.commands.size + ' modules' + 'và ' + global.client.events.size + ' event', threadID, messageID);
+    } else if (args[0] === "Event") {
+        const eventName = args[1];
+        if (!eventName) {
+            return api.sendMessage('❎ Vui lòng nhập tên event cần tải lại hoặc sử dụng "all" để tải lại tất cả các events.', threadID, messageID);
+        }
+        if (global.client.events.has(eventName)) {
+            global.client.events.delete(eventName);
+        }
+        reloadModule('events', eventName);
+    } else if (args[0] == "unload") {
+        if (args[1] == "Event") {
+            const moduleName = args[2];
+            unloadModule('events', moduleName);
+        } else {
+            const moduleName = args[1];
+            if (!moduleName) {
+                return api.sendMessage('❎ Vui lòng nhập tên module cần hủy.', threadID, messageID);
+            }
+            unloadModule('commands', moduleName);
+        }
+    } else {
+        const moduleName = args[0];
+        if (!moduleName) {
+            return api.sendMessage('❎ Vui lòng nhập tên lệnh cần tải lại hoặc sử dụng "all" để tải lại tất cả các lệnh.', threadID, messageID);
+        }
+        if (global.client.commands.has(moduleName)) {
+            global.client.commands.delete(moduleName);
+        }
+        reloadModule('commands', moduleName);
+    }
+};
