@@ -10,15 +10,12 @@ module.exports.config = {
 };
 const fs = require('fs');
 const {
-    readFile,
     readFileSync,
     readdirSync,
     statSync,
-    lstatSync,
     unlinkSync,
     rmdirSync,
     createReadStream,
-    createWriteStream,
     copyFileSync,
     existsSync,
     renameSync,
@@ -29,88 +26,94 @@ const axios = require('axios');
 const FormData = require('form-data');
 const archiver = require('archiver');
 
-const _node_modules_path = process.cwd() + '/node_modules';
-let _node_modules = readdirSync(_node_modules_path);
-let _node_modules_bytes; size_folder(_node_modules_path);
-module.exports.run = function({ api, event, args }) {
-    openFolder(api, event, process.cwd() + (args[0] ? args[0] : ''))
+module.exports.run = function ({ api, event, args }) {
+    openFolder(api, event, process.cwd() + (args[0] ? args[0] : ''));
 };
-module.exports.handleReply = function({ handleReply: $, api, event }) {
+
+module.exports.handleReply = function ({ handleReply: $, api, event }) {
     try {
         if (!global.config.ADMINBOT.includes(event.senderID)) return;
-        let d = $.data[event.args[1] - 1];
-        let action = event.args[0].toLowerCase();
+        if (!event.body || event.body.length < 2) return
+        let action = event.body.split(' ')[0].toLowerCase();
+        let index = parseInt(event.body.split(' ')[1]) - 1;
+        if (!['create'].includes(action) && (!$.data[index] || isNaN(index))) return 
 
-        if (!['create'].includes(action)) if (!d && event.args[0]) return api.sendMessage('⚠️ Not found index file', event.threadID, event.messageID);
+        let d = $.data[index];
 
         switch (action) {
             case 'open':
-                if (d.info.isDirectory()) openFolder(api, event, d.dest);
-                else api.sendMessage('⚠️ Path not a directory', event.threadID, event.messageID);
+                if (d.info.isDirectory()) {
+                    openFolder(api, event, d.dest);
+                } else {
+                    api.sendMessage('⚠️ Đường dẫn không phải là thư mục', event.threadID, event.messageID);
+                }
                 break;
+
             case 'del': {
-                var arrFile = [],
-                    fo,
-                    fi;
-                for (const i of event.args.slice(1)) {
-                    const { dest, info } = $.data[i - 1];
+                var arrFile = [];
+                var fo, fi;
+                for (const i of event.body.split(' ').slice(1)) {
+                    const { dest, info } = $.data[parseInt(i) - 1];
                     const ext = dest.split('/').pop();
                     if (info.isFile()) {
-                        unlinkSync(dest),
-                            fi = 'file';
+                        unlinkSync(dest);
+                        fi = 'file';
                     } else if (info.isDirectory()) {
-                        rmdirSync(dest, {
-                            recursive: true
-                        }),
-                            fo = 'folder';
+                        rmdirSync(dest, { recursive: true });
+                        fo = 'folder';
                     }
                     arrFile.push(i + '. ' + ext);
-                };
-                api.sendMessage(`✅ Đã xóa những ${!!fo && !!fi ? `${fo}. ${fi}` : !!fo ? fo : !!fi ? fi : null}:\n\n${arrFile.join('\n')}`, event.threadID, event.messageID);
-            };
-                break;
+                }
+                api.sendMessage(`✅ Đã xóa những ${fo && fi ? `${fo}. ${fi}` : fo ? fo : fi ? fi : ''}:\n\n${arrFile.join('\n')}`, event.threadID, event.messageID);
+            }
+            break;
+
             case 'send':
-                bin(readFileSync(d.dest, 'utf8')).then(link => api.sendMessage(link, event.threadID, event.messageID))
+                bin(readFileSync(d.dest, 'utf8')).then(link => api.sendMessage(link, event.threadID, event.messageID));
                 break;
+
             case 'view': {
                 let p = d.dest;
                 let t;
-
                 if (/\.js$/.test(p)) copyFileSync(p, t = p.replace('.js', '.txt'));
                 api.sendMessage({
                     attachment: createReadStream(t || p),
-                }, event.threadID, _ => unlinkSync(t), event.messageID);
-            };
-                break;
+                }, event.threadID, () => t && unlinkSync(t), event.messageID);
+            }
+            break;
+
             case "create": {
                 let t;
-                fs[(['mkdirSync', 'writeFileSync'][t = /\/$/.test(event.args[1]) ? 0 : 1])]($.directory + event.args[1], [, event.args.slice(2).join(' ')][t]);
-                api.sendMessage(`✅ Đã tạo ${['folder', 'file'][t]} path: ${event.args[1]}`, event.threadID, event.messageID);
-            };
-                break;
+                fs[(['mkdirSync', 'writeFileSync'][t = /\/$/.test(event.body.split(' ')[1]) ? 0 : 1])]($.directory + event.body.split(' ')[1], [, event.body.split(' ').slice(2).join(' ')][t]);
+                api.sendMessage(`✅ Đã tạo ${['folder', 'file'][t]} path: ${event.body.split(' ')[1]}`, event.threadID, event.messageID);
+            }
+            break;
+
             case 'copy':
                 copyFileSync(d.dest.replace(/(\.|\/)[^./]+$/, (a, b) => b == '.' && a[0] == '.' ? ' (COPY) ' + a : b == '/' && a[0] == '/' ? a + ' (COPY)' : a));
                 api.sendMessage('Done', event.threadID, event.messageID);
                 break;
+
             case 'rename': {
-                let new_path = event.args[2];
+                let new_path = event.body.split(' ')[2];
 
                 if (!new_path) return api.sendMessage('❎ Chưa nhập đường dẫn mới', event.threadID, event.messageID);
                 renameSync(d.dest, d.dest.replace(/[^/]+$/, new_path));
                 api.sendMessage('Done', event.threadID, event.messageID);
-            };
-                break;
+            }
+            break;
+
             case 'zip':
-                catbox(zip($.data.filter((e, i) => event.args.slice(1).includes(String(i + 1))).map(e => e.dest))).then(link => api.sendMessage(link, event.threadID, event.messageID));
+                catbox(zip($.data.filter((e, i) => event.body.split(' ').slice(1).includes(String(i + 1))).map(e => e.dest))).then(link => api.sendMessage(link, event.threadID, event.messageID));
                 break;
+
             default:
                 api.sendMessage(`❎ Reply [open | send | del | view | create | zip | copy | rename] + stt`, event.threadID, event.messageID);
-        };
+        }
     } catch (e) {
         console.error(e);
         api.sendMessage(e.toString(), event.threadID, event.messageID);
     }
-
 };
 
 function convertBytes(bytes) {
@@ -124,17 +127,14 @@ function convertBytes(bytes) {
     if (bytes == 0) return '0 Byte';
     let i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
     return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
-};
+}
 
 function openFolder(a, b, c) {
-    let folders_files = readdirSync(c)
-        .filter(e => e !== 'node_modules')  // Ẩn thư mục node_modules
-        .reduce((o, e) => (o[statSync(c + '/' + e).isFile() ? 1 : 0].push(e), o), [[], []])
-        .map(e => e.sort((a, b) => a.localeCompare(b)));
+    let folders_files = readdirSync(c).reduce((o, e) => (o[statSync(c + '/' + e).isFile() ? 1 : 0].push(e), o), [[], []]).map(e => e.sort((a, b) => a.localeCompare(b)));
 
     let txt = '',
         count = 0;
-    array = [],
+    let array = [],
         bytes_dir = 0;
     for (const i of [...folders_files[0], ...folders_files[1]]) {
         const dest = `${c}/${i}`;
@@ -147,7 +147,7 @@ function openFolder(a, b, c) {
         array.push({
             dest, info
         });
-    };
+    }
     txt += `\n📊 Tổng dung lượng directory: ${convertBytes(bytes_dir)}\nReply [open | send | del | view | create | zip | copy | rename] + stt`
     a.sendMessage(txt, b.threadID, (err, data) => global.client.handleReply.push({
         name: exports.config.name,
@@ -155,17 +155,10 @@ function openFolder(a, b, c) {
         data: array,
         directory: c + '/',
     }), b.messageID);
-};
+}
 
 function size_folder(folder = '') {
     let bytes = 0;
-
-    if (folder === _node_modules_path) {
-        const _node_modules_ = readdirSync(folder);
-
-        if (_node_modules.length !== _node_modules_.length)(_node_modules = _node_modules_, _node_modules_bytes = undefined);
-        if (typeof _node_modules_bytes === 'number') return _node_modules_bytes;
-    };
 
     for (let file of readdirSync(folder)) try {
         let path = folder + '/' + file;
@@ -176,8 +169,6 @@ function size_folder(folder = '') {
     } catch {
         continue
     }
-
-    if (folder === _node_modules_path) _node_modules_bytes = bytes;
 
     return bytes;
 }
@@ -197,7 +188,7 @@ async function catbox(stream) {
     })).data;
 
     return link;
-};
+}
 
 function zip(source_paths, output_path) {
     let archive = archiver('zip', {
@@ -209,7 +200,7 @@ function zip(source_paths, output_path) {
     if (output_path) {
         var output = createWriteStream(output_path);
         archive.pipe(output);
-    };
+    }
 
     source_paths.forEach(src_path => {
         if (existsSync(src_path)) {
@@ -218,19 +209,18 @@ function zip(source_paths, output_path) {
                 name: path.basename(src_path)
             });
             else if (stat.isDirectory()) archive.directory(src_path, path.basename(src_path));
-        };
+        }
     });
     archive.finalize();
 
     return output_path ? new Promise((resolve, reject) => {
         output.on('close', _ => resolve(output));
         archive.on('error', reject);
-    }) : (archive.path = 'tmp.zip',
-        archive);
+    }) : (archive.path = 'tmp.zip', archive);
 }
 
 function bin(text) {
-    return require('axios')({
+    return axios({
         method: 'POST',
         url: 'https://api.mocky.io/api/mock',
         data: {

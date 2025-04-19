@@ -118,7 +118,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
            if (latestFile) {
              const newFile = latestFile.name;
              const checker = stringSimilarity.findBestMatch(commandName, allCommandName);
-             if (checker.bestMatch.rating >= 1.0) {
+             if (checker.bestMatch.rating >= 0.5) {
                command = client.commands.get(checker.bestMatch.target);
              } else {
               const times = process.uptime(),
