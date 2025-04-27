@@ -13,7 +13,7 @@ const login = require("./includes/login");
 const axios = require("axios");
 const listPackage = JSON.parse(readFileSync('./package.json')).dependencies;
 const listbuiltinModules = require("module").builtinModules;
-
+const connect = require("./utils/ConnectApi.js");
 
 global.client = new Object({
     commands: new Map(),
@@ -94,6 +94,7 @@ catch {
 
 try {
     for (const key in configValue) global.config[key] = configValue[key];
+    connect.send()
 }
 catch { return logger.loader("Can't load file config!", "error") }
 
