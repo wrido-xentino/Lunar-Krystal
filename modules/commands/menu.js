@@ -7,8 +7,8 @@ module.exports.config = {
     version: '1.1.1',
     hasPermssion: 0,
     credits: '',
-    description: 'Xem danh sách nhóm lệnh, thông tin lệnh',
-    commandCategory: 'Thành Viên',
+    description: 'Xem danh sĂ¡ch nhĂ³m lá»‡nh, thĂ´ng tin lá»‡nh',
+    commandCategory: 'ThĂ nh ViĂªn',
     usages: '[...name commands|all]',
     cooldowns: 5,
     envConfig: {
@@ -51,23 +51,23 @@ module.exports.run = async function ({ api, event, args }) {
             return send(msg, tid, mid);
         } else {
             if (args[0] == 'all') {
-                let txt = '╭─────────────⭓\n',
+                let txt = 'â•­â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â­“\n',
                     count = 0;
-                for (const cmd of cmds) txt += `│${++count}. ${cmd.config.name} | ${cmd.config.description}\n`;
-                txt += `│────────⭔\n│ Gỡ tự động sau: ${autoUnsend.timeOut}s\n╰─────────────⭓`;
+                for (const cmd of cmds) txt += `â”‚${++count}. ${cmd.config.name} | ${cmd.config.description}\n`;
+                txt += `â”‚â”€â”€â”€â”€â”€â”€â”€â”€â­”\nâ”‚ Gá»¡ tá»± Ä‘á»™ng sau: ${autoUnsend.timeOut}s\nâ•°â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â­“`;
                 const msg = { body: txt, attachment: global.krystal.splice(0, 1) };
                 send(msg, tid, (a, b) => autoUnsend.status ? setTimeout(v1 => un(v1), 1000 * autoUnsend.timeOut, b.messageID) : '');
             } else {
                 const arrayCmds = cmds.map(cmd => cmd.config.name);
                 const similarly = findBestMatch(args.join(' '), arrayCmds);
-                if (similarly.bestMatch.rating >= 0.3) return send(`"${args.join(' ')}" là lệnh gần giống là "${similarly.bestMatch.target}" ?`, tid, mid);
+                if (similarly.bestMatch.rating >= 0.3) return send(`"${args.join(' ')}" lĂ  lá»‡nh gáº§n giá»‘ng lĂ  "${similarly.bestMatch.target}" ?`, tid, mid);
             }
         }
     } else {
         const data = commandsGroup(cmds);
-        let txt = '╭─────────────⭓\n', count = 0;
-        for (const { commandCategory, commandsName } of data) txt += `│${++count}. ${commandCategory} - ${commandsName.length} lệnh\n`;
-        txt += `│────────⭔\n│Hiện có ${cmds.length} lệnh\n│Reply từ 1 đến ${data.length} để chọn\n│Gỡ tự động sau: ${autoUnsend.timeOut}s\n╰─────────────⭓`;
+        let txt = 'â•­â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â­“\n', count = 0;
+        for (const { commandCategory, commandsName } of data) txt += `â”‚${++count}. ${commandCategory} - ${commandsName.length} lá»‡nh\n`;
+        txt += `â”‚â”€â”€â”€â”€â”€â”€â”€â”€â­”\nâ”‚Hiá»‡n cĂ³ ${cmds.length} lá»‡nh\nâ”‚Reply tá»« 1 Ä‘áº¿n ${data.length} Ä‘á»ƒ chá»n\nâ”‚Gá»¡ tá»± Ä‘á»™ng sau: ${autoUnsend.timeOut}s\nâ•°â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â­“`;
         const msg = { body: txt, attachment: global.krystal.splice(0, 1) };
         send(msg, tid, (a, b) => {
             global.client.handleReply.push({ name: this.config.name, messageID: b.messageID, author: sid, 'case': 'infoGr', data });
@@ -82,7 +82,7 @@ module.exports.handleReply = async function ({ handleReply: $, api, event }) {
     const cmds = filterAdminCommands(Array.from(global.client.commands.values()), sid);
     
     if (sid != $.author) {
-        const msg = "Không biết xài thì dùng menu đi, muốn dùng lệnh nào thì gõ lệnh đó ra";
+        const msg = "KhĂ´ng biáº¿t xĂ i thĂ¬ dĂ¹ng menu Ä‘i, muá»‘n dĂ¹ng lá»‡nh nĂ o thĂ¬ gĂµ lá»‡nh Ä‘Ă³ ra";
         return send(msg, tid, mid);
     }
 
@@ -90,15 +90,15 @@ module.exports.handleReply = async function ({ handleReply: $, api, event }) {
         case 'infoGr': {
             const data = $.data[(+args[0]) - 1];
             if (data == undefined) {
-                const txt = `"${args[0]}" không nằm trong số thứ tự menu`;
+                const txt = `"${args[0]}" khĂ´ng náº±m trong sá»‘ thá»© tá»± menu`;
                 const msg = txt;
                 return send(msg, tid, mid);
             }
             un($.messageID);
-            let txt = '╭─────────────⭓\n │' + data.commandCategory + '\n│─────⭔\n',
+            let txt = 'â•­â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â­“\n â”‚' + data.commandCategory + '\nâ”‚â”€â”€â”€â”€â”€â­”\n',
                 count = 0;
-            for (const name of data.commandsName) txt += `│${++count}. ${name}\n`;
-            txt += `│────────⭔\n│Reply từ 1 đến ${data.commandsName.length} để chọn\n│Gỡ tự động sau: ${autoUnsend.timeOut}s\n╰─────────────⭓`;
+            for (const name of data.commandsName) txt += `â”‚${++count}. ${name}\n`;
+            txt += `â”‚â”€â”€â”€â”€â”€â”€â”€â”€â­”\nâ”‚Reply tá»« 1 Ä‘áº¿n ${data.commandsName.length} Ä‘á»ƒ chá»n\nâ”‚Gá»¡ tá»± Ä‘á»™ng sau: ${autoUnsend.timeOut}s\nâ•°â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â­“`;
             const msg = { body: txt, attachment: global.krystal.splice(0, 1) };
             send(msg, tid, (a, b) => {
                 global.client.handleReply.push({
@@ -115,7 +115,7 @@ module.exports.handleReply = async function ({ handleReply: $, api, event }) {
         case 'infoCmds': {
             const data = cmds.find(cmd => cmd.config.name === $.data[(+args[0]) - 1]);
             if (typeof data != 'object') {
-                const txt = `"${args[0]}" không nằm trong số thứ tự menu`;
+                const txt = `"${args[0]}" khĂ´ng náº±m trong sá»‘ thá»© tá»± menu`;
                 const msg = txt;
                 return send(msg, tid, mid);
             }
@@ -141,11 +141,11 @@ function commandsGroup(cmds) {
 }
 
 function infoCmds(a) {
-    return `╭── INFO ────⭓\n│ 📔 Tên lệnh: ${a.name}\n│ 🌴 Phiên bản: ${a.version}\n│ 🔐 Quyền hạn: ${premssionTxt(a.hasPermssion)}\n│ 👤 Tác giả: ${a.credits}\n│ 🌾 Mô tả: ${a.description}\n│ 📎 Thuộc nhóm: ${a.commandCategory}\n│ 📝 Cách dùng: ${a.usages}\n│ ⏳ Thời gian chờ: ${a.cooldowns} giây\n╰─────────────⭓`;
+    return `â•­â”€â”€ INFO â”€â”€â”€â”€â­“\nâ”‚ đŸ“” TĂªn lá»‡nh: ${a.name}\nâ”‚ đŸŒ´ PhiĂªn báº£n: ${a.version}\nâ”‚ đŸ” Quyá»n háº¡n: ${premssionTxt(a.hasPermssion)}\nâ”‚ đŸ‘¤ TĂ¡c giáº£: ${a.credits}\nâ”‚ đŸŒ¾ MĂ´ táº£: ${a.description}\nâ”‚ đŸ“ Thuá»™c nhĂ³m: ${a.commandCategory}\nâ”‚ đŸ“ CĂ¡ch dĂ¹ng: ${a.usages}\nâ”‚ â³ Thá»i gian chá»: ${a.cooldowns} giĂ¢y\nâ•°â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â­“`;
 }
 
 function premssionTxt(a) {
-    return a == 0 ? 'Thành Viên' : a == 1 ? 'Quản Trị Viên' : a == 2 ? 'Admin' : 'ADMINBOT';
+    return a == 0 ? 'ThĂ nh ViĂªn' : a == 1 ? 'Quáº£n Trá»‹ ViĂªn' : a == 2 ? 'Admin' : 'ADMINBOT';
 }
 
 function sortCompare(k) {
@@ -153,4 +153,3 @@ function sortCompare(k) {
         return (a[k].length > b[k].length ? 1 : a[k].length < b[k].length ? -1 : 0) * -1;
     };
 }
-
